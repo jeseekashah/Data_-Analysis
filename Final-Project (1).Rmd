@@ -1,0 +1,477 @@
+---
+output: html_document
+---
+
+```{r, echo=FALSE}
+# Define variable containing url
+logoUrl <- "https://www.underconsideration.com/brandnew/archives/northeastern_university_logo.png"
+```
+
+<center><img src="`r logoUrl`" width="650" height="300"></center>
+
+<br>
+<p><center>
+<font size = 6> ALY6010: Final Project</font> </center>
+</p>
+
+<style>
+        .tab {
+            display: inline-block;
+            margin-left: 40px;
+        }
+        .tab1 {
+            display: inline-block;
+            margin-left: 50px;
+        }
+        .tab2 {
+            display: inline-block;
+            margin-left: 60px;
+        }
+        .tab3 {
+            display: inline-block;
+            margin-left: 70px;
+        }
+        .tab4 {
+            display: inline-block;
+            margin-left: 80px;
+        }
+        .tab5 {
+            display: inline-block;
+            margin-left: 100px;
+        }
+        table {
+          table-layout: fixed ;
+          width: 100% ;
+        }
+</style>
+
+<br>
+<p>
+<font size = 4>
+<br><b> Name     <span class="tab4"></span><span class="tab4"></span></b> : Jeseeka Shah, Sanjana Chaudhari and Supreeth Murugesh
+<br><b> Instructor    <span class="tab4"></span><span class="tab"></span></b> : Prof. Amin Karimpour
+<br><b> Class    <span class="tab5"></span><span class="tab2"></span></span></b> : Probability Theory and Introductory Statistics
+<br><b> School   <span class="tab4"></span></b> <span class="tab2"></span> : Northeastern University - College of Professional Studies
+<br><b> Date of submission <span class="tab"></span></b> : `r format(Sys.time(), "%d %B, %Y")` </font>
+</p>
+
+
+```{r warning=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(plotrix)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggcorrplot)
+```
+
+
+<br><b><p>
+<font size=5 color="#a84551">
+Dataset 
+</font>
+</p></b>
+
+```{r}
+# Loading the dataset 
+superstore_2011_2015 <- read.csv("Dataset/superstore-2011-2015.csv")
+
+# Considering only the US market for Analysis 
+superstore_2011_2015 <- filter(superstore_2011_2015,  superstore_2011_2015$Market == "US")
+
+# Omitting NA values
+superstore_2011_2015 <- na.omit(superstore_2011_2015)
+
+# Calculating Total Sales
+superstore_2011_2015 <- mutate(superstore_2011_2015, 
+                               Total_Sales = superstore_2011_2015$Sales * superstore_2011_2015$Quantity)
+```
+
+<br><b><p>
+<font size=5 color="#a84551">
+Descriptive Statistics of numerical variables
+</font>
+</p></b>
+
+```{r}
+columnNames <- c('Sales', 'Discount', 'Profit', 'Shipping Cost', 'Total Sales')
+rowNames <- c('Mean', 'Standard Deviation', 'Range', 'Median')
+
+# Descriptive statistics of Discount 
+meanDiscount <- round(mean(superstore_2011_2015$Discount),2)
+stdDiscount <- round(sd(superstore_2011_2015$Discount),4)
+rangeDiscount <- round(max(superstore_2011_2015$Discount) - min(superstore_2011_2015$Discount),2)
+medianDiscount <- median(superstore_2011_2015$Discount)  
+
+discountStats <- rbind(meanDiscount, stdDiscount, rangeDiscount, medianDiscount)
+
+# Descriptive statistics of Sales
+meanSales <- mean(superstore_2011_2015$Sales)
+stdSales <- round(sd(superstore_2011_2015$Sales),2)
+rangeSales <- max(superstore_2011_2015$Sales) - min(superstore_2011_2015$Sales)
+medianSales <- median(superstore_2011_2015$Sales)
+
+salesStats <- rbind(meanSales, stdSales, rangeSales, medianSales)
+
+# Descriptive statistics of Profits
+meanProfit <- mean(superstore_2011_2015$Profit)
+stdProfit <- round(sd(superstore_2011_2015$Profit),2)
+rangeProfit <- max(superstore_2011_2015$Profit) - min(superstore_2011_2015$Profit)
+medianProfit <- median(superstore_2011_2015$Profit)
+
+ProfitStats <- rbind(meanProfit, stdProfit, rangeProfit, medianProfit)
+
+# Descriptive statistics of Shipping cost of the product
+meanShippingCost <- mean(superstore_2011_2015$Shipping.Cost)
+stdShippingCost <- round(sd(superstore_2011_2015$Shipping.Cost),2)
+rangeShippingCost <- max(superstore_2011_2015$Shipping.Cost) - min(superstore_2011_2015$Shipping.Cost)
+medianShippingCost <- median(superstore_2011_2015$Shipping.Cost)
+
+ShippingCostStats <- rbind(meanShippingCost, stdShippingCost, rangeShippingCost, medianShippingCost)
+combinedData <- cbind(discountStats, salesStats, ProfitStats, ShippingCostStats)
+
+tableData <- combinedData
+rownames(tableData) <- c('Mean', 'Standard Deviation', 'Range', 'Median')
+colnames(tableData) <- c('Discount', 'Sales', 'Profit', 'Shipping Cost')
+kable(tableData, caption = "<center><strong>Table 1: Statistics of 4 numerical variables</strong></center>", escape = FALSE,
+    format = "html") %>% kable_material(c("striped", "hover"))
+```
+
+<br><b><p>
+<font size=5 color="#a84551">
+Exploratory Data analysis
+</font>
+</p></b>
+
+```{r}
+par(mar=c(5,8,4,2))
+# Plot: Orders by each categories
+colorname=RColorBrewer::brewer.pal(5,"Dark2") 
+y= barplot(table(superstore_2011_2015$Category), 
+                 ylim=c(0,8000), 
+                 col = colorname, 
+                 border="black", 
+                 main = "Bar Plot for Category Count", 
+                 xlab = "Category", 
+                 ylab = "Freqency of Category Count", 
+                 col.main="burlywood4", 
+                 col.lab="burlywood4") 
+```
+
+
+```{r}
+par(mar=c(5,8,4,2))
+#Plot: Sales for different 
+ggplot() + geom_jitter(data = superstore_2011_2015, 
+                       aes(x = Region, y = Sales, fill = Region, colour=Region), 
+                       stat = "identity") + 
+  labs(x = "Region", y = "Sales ($)", title = "Sales Distribution in different regions", subtitle = "Dataset: Superstore Data") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(plot.title = element_text(size=12, hjust=0.5, colour="black", vjust=-1)) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5, colour="black", vjust=-1))
+```
+
+
+```{r warning=FALSE}
+par(mar=c(5,8,4,2))
+#Plot: Sales Vs. Profit with mean and Linear Regression
+
+plot(superstore_2011_2015$Sales, y=superstore_2011_2015$Profit, 
+     pch = 19, col = "orange", fit="lm", 
+     xlab = "Sales ($)",
+     ylab = "Profit ($)",
+     main = "Sales vs Distribution")  
+abline(h = mean(superstore_2011_2015$Profit), col = 'steelblue', lwd = 3, lty = 2)  
+reg_model <- lm(Profit ~ Sales, data = superstore_2011_2015) 
+abline(reg_model, col="purple")  
+```
+
+
+```{r}
+par(mar=c(5,8,4,2))
+# Plot: Profit made by catergories
+superstore_2011_2015 %>% ggplot(aes(x = Category, y = Profit)) + 
+         geom_point(aes(width = 0.9, outlier.shape = NA,color = Category)) +
+  labs(title = "Profit distribution in Product categories", 
+       subtitle = "Dataset: Superstore Data",
+       color = "Category") +
+  theme(plot.title = element_text(size=12, hjust=0.5, colour="black", vjust=-1)) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5, colour="black", vjust=-1))
+```
+
+```{r}
+
+```
+
+
+```{r}
+par(mar=c(5,8,4,2))
+# Plot: Shipmode and Shipping cost
+ggplot(superstore_2011_2015, 
+       aes(x = Ship.Mode, 
+           y = Shipping.Cost, 
+           color = Ship.Mode)) + 
+  geom_jitter(position=position_jitter(0.2), shape=17) +
+  theme_minimal() + 
+  labs(x="Shipmode", y="Shipping Cost($)", 
+       title = "Shipping cost for different shipping modes", 
+       subtitle = "Dataset: Superstore Data",
+       color = "Shipping Mode") +
+  theme(plot.title = element_text(size=12, hjust=0.5, colour="black", vjust=-1)) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5, colour="black", vjust=-1)) + 
+  scale_colour_manual(values=c("#AA2A64", "#BF403B", "#274530", "#779645")) +
+  scale_shape_manual(values=c("#EDB361", "#BF403B", "#274530", "#779645")) 
+```
+
+
+```{r}
+# Plot: Order count in each product category
+par(mar=c(5,8,4,2))
+categoryCount <- table(superstore_2011_2015$Category)
+categoryCountPlot <- barplot(categoryCount, 
+                              main = "Order count in each product category", 
+                              ylab = "Count",
+                              xlab = "Category",
+                              width = 0.7, space = 0.15, ylim = c(0,7000), 
+                              cex.axis = 0.7, las = 1,
+                             col = c("#B72E56", "#61B94C", "#7006C2"), border = NA)
+text(categoryCountPlot, categoryCount, 
+     labels = categoryCount, col = "white", pos = 1, cex= 0.8)
+```
+
+
+```{r}
+# Plot: Profit distribution
+par(mar=c(5,8,4,2))
+lossOutlier = which(superstore_2011_2015$Profit < 1.7280 | superstore_2011_2015$Profit > 70.7220)
+lossOutlierData <- superstore_2011_2015[-lossOutlier,]
+hist(lossOutlierData$Profit,
+     breaks = 25,
+     ylim = c(0,1000),
+     main="Histogram of Profit earned",
+     xlab = "Profit ($)",
+     ylab = "Count",
+     col = terrain.colors(10))
+```
+
+
+```{r}
+par(mar=c(5,8,4,2))
+# Plot: Scatter plot of Total Sales vs Profit vs Discount
+plot_ly(x=superstore_2011_2015$Total_Sales, 
+        y=superstore_2011_2015$Profit, 
+        z=superstore_2011_2015$Discount, 
+        type="scatter3d", mode="markers", color=superstore_2011_2015$Sales) %>%
+  layout(scene = list(xaxis = list(title = "Sales"), 
+                      yaxis = list(title = "Profit"), 
+                      zaxis = list(title = "Discount Percentage")))
+```
+
+
+```{r out.width='\\textwidth',fig.align='center', fig.width=10}
+# Plot 10: Time series analysis of Profit
+
+# Typecasting to date
+superstore_2011_2015$OrderDateColumn <- as.Date(superstore_2011_2015$`Order.Date`, "%m/%d/%Y")
+superstore_2011_2015$OrderDateColumn <- format(as.Date(superstore_2011_2015$OrderDateColumn), "%Y-%m")
+
+# Group by date and calculate Profit and Loss
+timeSeriesProfitData <- aggregate(`Sales` ~ OrderDateColumn + Category, 
+                                  data = superstore_2011_2015, FUN = sum, na.rm = TRUE)
+
+ggplot(timeSeriesProfitData, aes(x = factor(OrderDateColumn), y = Sales, group = Category, color = Category)) +  
+  geom_line(size = 1) +
+  scale_color_manual(values=c("#FDC534", "#007FFE", "#D61E29")) +
+  theme_gray() +
+  labs(x="Date", y="Profit($)", 
+       title = "Profit obtained for different product categories", 
+       subtitle = "Dataset: Superstore Data") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1, size = 6)) +
+  theme(axis.text.y = element_text(hjust=1, size = 14)) +
+  theme(plot.title = element_text(size=12, hjust=0.5, colour="black", vjust=-1)) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5, colour="black", vjust=-1))
+```
+
+<br><b><p>
+<font size=5 color="#a84551">
+Hypothesis Testing
+</font>
+</p></b>
+
+<br><b><p>
+<font size=4 color="#a84551">
+1. Hypothesis:
+</font>
+</p></b>
+
+<p>
+<font size=3 color="#326ab4">
+<b>Ho :</b> Average profit of the company in the US region is not $25 <br>
+<b>Ha :</b> Average profit of the company in the US region is $25 <br>
+</font>
+</p>
+
+```{r warning=FALSE}
+
+#Ho : Average profit of the company in the US region is not $25 
+#Ha : Average profit of the company in the US region is $25 
+
+# t-test (One sample)
+
+oneSampleData <- superstore_2011_2015[sample(nrow(superstore_2011_2015), 29), ]
+t.test(oneSampleData$Profit, conf.level = .95, mu = 25)  
+```
+
+<br><b><p>
+<font size=4 color="#a84551">
+2. Hypothesis:
+</font>
+</p></b>
+<p>
+<font size=4 color="#326ab4">
+<b>Ho :</b> True difference in average profit of Office Supplies and Technology is not 0   <br>
+<b>Ha :</b> True difference in average profit of Office Supplies and Technology is  0 <br>
+</font>
+</p>
+
+```{r warning=FALSE}
+
+OfficeSuppliesProfit <- subset(superstore_2011_2015, Category =="Office Supplies") 
+TechnologyProfit <- subset(superstore_2011_2015, Category =="Technology") 
+
+OfficeSuppliesRandomSample <- OfficeSuppliesProfit[sample(nrow(OfficeSuppliesProfit), 25), ]
+TechnologyRandomSample <- TechnologyProfit[sample(nrow(TechnologyProfit), 25), ]
+
+t.test(OfficeSuppliesRandomSample$Profit, TechnologyRandomSample$Profit)
+```
+
+<br><b><p>
+<font size=4 color="#a84551">
+3. Hypothesis:
+</font>
+</p></b>
+<p>
+<font size=4 color="#326ab4">
+<b>Ho :</b> True difference in average sales of West and East region is not 0    <br>
+<b>Ha :</b> True difference in average sales of West and East region is  0    <br>
+</font>
+</p>
+
+```{r warning=FALSE}
+# t-test (Two sample)
+westRegionSales <- subset(superstore_2011_2015, Region =="West") 
+eastRegionSales <- subset(superstore_2011_2015, Region =="East") 
+
+westRandomSample <- westRegionSales[sample(nrow(westRegionSales), 20), ]
+eastRandomSample <- eastRegionSales[sample(nrow(eastRegionSales), 20), ]
+
+t.test(westRandomSample$Sales, eastRandomSample$Sales, conf.level = 0.95) 
+```
+
+<br><b><p>
+<font size=4 color="#a84551">
+Data distribution of Shipping cost for Corporate vs Consumer segments
+</font>
+</p></b>
+```{r warning=FALSE}
+
+consumerShippingCost <- subset(superstore_2011_2015, Segment =="Consumer") 
+corporateShippingCost <- subset(superstore_2011_2015, Segment =="Corporate") 
+
+
+plotData <- subset(superstore_2011_2015, Segment =="Corporate" | Segment =="Consumer") 
+ggplot(plotData, aes(x = plotData$Segment, y = plotData$Shipping.Cost, 
+                                 color=plotData$Segment)) + 
+  geom_jitter(position=position_jitter(0.2)) +
+  theme_light() + 
+  labs(y="Shipping costs ($)", x="Segments", title = "Shipping cost for Corporate vs Consumer segments", 
+       subtitle = "Dataset: Superstore data") +
+  theme(plot.title = element_text(size=14, hjust=0.5, colour="black", vjust=-1)) +
+  theme(plot.subtitle = element_text(size=10, hjust=0.5, colour="black", vjust=-1)) + 
+   scale_colour_manual(values = c("#4AB097", "#BB203C", "#FB761F")) +
+  scale_shape_manual(values=c(1,17,19))
+```
+
+<br><b><p>
+<font size=4 color="#a84551">
+4. Hypothesis:
+</font>
+</p></b>
+<p>
+<font size=4 color="#326ab4">
+<b>Ho :</b> True difference in average shipping cost of Consumer and Corporate segments is not 0<br>
+<b>Ha :</b> True difference in average shipping cost of Consumer and Corporate segments is 0<br>
+</font>
+</p>
+
+```{r}
+# t-test (Two sample)
+consumerRandomSample <- consumerShippingCost[sample(nrow(consumerShippingCost), 24), ]
+corporateRandomSample <- corporateShippingCost[sample(nrow(corporateShippingCost), 24), ]
+
+t.test(consumerRandomSample$Shipping.Cost, corporateRandomSample$Shipping.Cost, conf.level = 0.95) 
+```
+
+
+<br><b><p>
+<font size=4 color="#a84551">
+5. Hypothesis:
+</font>
+</p></b>
+<p>
+<font size=4 color="#326ab4">
+<b>Ho :</b> Company's average sales is higher in the West region than East region of the US<br>
+<b>Ha :</b> Company's average sales is higher in the East region than West region of the US<br>
+</font>
+</p>
+```{r}
+# t-test (Two sample)
+t.test(westRandomSample$Sales, eastRandomSample$Sales, conf.level = 0.95,
+       alternative = "greater") 
+```
+
+<br><b><p>
+<font size=5 color="#a84551">
+Correlation and Regression analysis
+</font>
+</p></b>
+
+```{r}
+# Correlation between Sale, Discount, Profit, Quantity and Shipping cost
+
+corrData <- data.frame(Sales = superstore_2011_2015$Sales,
+                       Discount = superstore_2011_2015$Discount,
+                       Profit = superstore_2011_2015$Profit,
+                       Quantity = superstore_2011_2015$Quantity,
+                       `Shipping Cost` = superstore_2011_2015$Shipping.Cost)
+ggcorrplot(cor(corrData), 
+           hc.order = TRUE, 
+           type = "lower", lab = TRUE, 
+           insig = "blank",
+           ggtheme = ggplot2::theme_grey(),
+           title = "Correlation between Company's Sales stats")
+```
+```{r}
+# Linear Regression Model
+model2 <- lm(Shipping.Cost ~ Sales + Category, data = superstore_2011_2015)
+summary(model2)
+```
+
+```{r}
+# PLot1
+
+p1 <- ggplot(superstore_2011_2015, aes(x = Sales, 
+                             y = Shipping.Cost,
+                             col = Profit)) + 
+  xlim(c(0,7500)) + ylim(c(0,1000)) +
+  geom_point() +
+  theme_minimal() +
+  theme(axis.text=element_text(size=12)) +
+  geom_smooth(method="lm", formula = y~x, color = "red") +
+  facet_grid(~Segment)
+p1 + scale_color_gradient(low="pink", high="blue")
+```
+
